@@ -16,26 +16,24 @@ class Category(models.Model):
     def __str__(self):
         return self.title
     
-    class Meta:
-        verbose_name_plural = "Category"
-        ordering = ['title']
+    
+
 
 class Product(models.Model):
-
     Status = (
-            ("draft", "Draft"),
-            ("disabled", "Disabled"),
-            ("in_review", "In Review"),
-            ("published", "Published"),
-        )
+        ("draft", "Draft"),
+        ("disabled", "Disabled"),
+        ("in_review", "In Review"),
+        ("published", "Published"),
+    )
 
     title = models.CharField(max_length=100)
     image = models.FileField(upload_to="products", default="product.jpg", null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
-    old_price = models.DecimalField(decimal_places=2, max_digits=12,  default=0.00)
-    shipping_amount = models.DecimalField(decimal_places=2, max_digits=12,  default=0.00)
+    old_price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
+    shipping_amount = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
     stock_qty = models.PositiveIntegerField(default=1)
     in_stock = models.BooleanField(default=True)
     status = models.CharField(max_length=100, choices=Status, default="published")
@@ -44,14 +42,60 @@ class Product(models.Model):
     rating = models.PositiveIntegerField(default=0)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     pid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
-    slug = models.SlugField(unique=True) 
+    slug = models.SlugField(unique=True)
     date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if self.slug == "" or self.slug == None:
+        if self.slug == "" or self.slug is None:
             self.slug = slugify(self.title)
             
         super(Product, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title
+    
+    class Meta:
+        verbose_name_plural = "Product"  
+        ordering = ['title']
+
+
+class Gallery(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    image = models.FileField(upload_to="products", default="product.jpg")
+    active = models.BooleanField(default=True)
+    gid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
+
+    def __str__(self):
+        return self.product.title
+    
+    class Meta:
+        verbose_name_plural = "Product Images"
+        
+    
+
+class Specification(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    title = models.CharField(max_length=1000)
+    content = models.CharField(max_length=1000)
+
+    def __str__(self):
+        return self.title
+    
+
+class Size(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1000)
+    price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00) # different prize in different size
+
+    def __str__(self):
+        return self.name
+
+
+class Color(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1000)
+    color_code = models.CharField(max_length=1000)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
