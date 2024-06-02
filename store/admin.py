@@ -1,5 +1,5 @@
 from django.contrib import admin
-from store.models import Product, Category, Gallery, Specification, Size, Color, Cart, CartOrder, CartOrderItem
+from store.models import Product, Category, Gallery, Specification, Size, Color, Cart, CartOrder, CartOrderItem, Review, ProductFaq, Notification, Coupon
 
 # Inline classes for related models
 class GalleryInline(admin.TabularInline):
@@ -48,9 +48,29 @@ class CartOrderItemsAdmin(admin.ModelAdmin):
     search_fields = ['order__oid', 'product__title', 'vendor__name']
     list_filter = ['date']
 
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['user', 'product']
+
+class ProductFaqAdmin(admin.ModelAdmin):
+    list_display = ['user', 'question', 'answer', 'date','active']
+    list_editable = ['active', 'answer']
+
+
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['order', 'seen', 'user', 'vendor', 'date']
+    list_editable = ['seen']
+
+class CouponAdmin(admin.ModelAdmin):
+    list_display = ['vendor', 'code', 'discount', 'active', 'date']
+    list_editable = ['code', 'active']
+
 # Registering the models with their admin classes
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Category)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartOrder, CartOrderAdmin)
 admin.site.register(CartOrderItem, CartOrderItemsAdmin)
+admin.site.register(Review, ReviewAdmin)
+admin.site.register(ProductFaq,ProductFaqAdmin)
+admin.site.register(Notification,NotificationAdmin)
+admin.site.register(Coupon,CouponAdmin)
