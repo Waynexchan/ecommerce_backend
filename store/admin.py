@@ -55,7 +55,6 @@ class ProductFaqAdmin(admin.ModelAdmin):
     list_display = ['user', 'question', 'answer', 'date','active']
     list_editable = ['active', 'answer']
 
-
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ['order', 'seen', 'user', 'vendor', 'date']
     list_editable = ['seen']
@@ -71,6 +70,6 @@ admin.site.register(Cart, CartAdmin)
 admin.site.register(CartOrder, CartOrderAdmin)
 admin.site.register(CartOrderItem, CartOrderItemsAdmin)
 admin.site.register(Review, ReviewAdmin)
-admin.site.register(ProductFaq,ProductFaqAdmin)
-admin.site.register(Notification,NotificationAdmin)
-admin.site.register(Coupon,CouponAdmin)
+admin.site.register(ProductFaq, ProductFaqAdmin)
+admin.site.register(Notification, NotificationAdmin)
+admin.site.register(Coupon, CouponAdmin)

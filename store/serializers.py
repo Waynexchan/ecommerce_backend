@@ -78,7 +78,7 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(CartSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -94,7 +94,7 @@ class CartOrderSerializer(serializers.ModelSerializer):
         model = CartOrder
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(CartOrderSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -110,7 +110,7 @@ class CartOrderItemSerializer(serializers.ModelSerializer):
         model = CartOrderItem
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(CartOrderItemSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -126,7 +126,7 @@ class ProductFaqSerializer(serializers.ModelSerializer):
         model = ProductFaq
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(ProductFaqSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -142,7 +142,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(ReviewSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -158,7 +158,7 @@ class WishlistSerializer(serializers.ModelSerializer):
         model = Wishlist
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(WishlistSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -174,7 +174,7 @@ class CouponSerializer(serializers.ModelSerializer):
         model = Coupon
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(CouponSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")
@@ -190,7 +190,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = "__all__"
 
-    def __init__(self, *args, **kwargs): # extend product model
+    def __init__(self, *args, **kwargs): # extend  model
         super(NotificationSerializer, self).__init__(*args, **kwargs)
 
         request = self.context.get("request")

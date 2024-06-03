@@ -38,27 +38,27 @@ class Product(models.Model):
     status = models.CharField(max_length=100, choices=Status, default="published")
     featured = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
-    rating = models.PositiveIntegerField(default=0)
+    rating = models.PositiveIntegerField(default=0,null=True, blank=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     pid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
     slug = models.SlugField(unique=True)
     date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if self.slug == "" or self.slug is None:
+        if not self.slug:
             self.slug = slugify(self.title)
         super(Product, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title
 
-    def product_rating(self): # calculate the average rating of product
-        product_rating = Review.objects.filter(product=self).aggregate(avg_rating= models.avg("rating"))
+    def product_rating(self): # 計算產品的平均評分
+        product_rating = Review.objects.filter(product=self).aggregate(avg_rating=models.Avg("rating"))
         return product_rating['avg_rating']
     
     def rating_count(self):
         return Review.objects.filter(product=self).count()
-    
+
     def gallery(self):
         return Gallery.objects.filter(product=self)
     
@@ -70,11 +70,6 @@ class Product(models.Model):
     
     def color(self):
         return Color.objects.filter(product=self)
-        
-
-    def save(self, *args, **kwargs):
-        self.rating = self.product_rating()
-        super(Product, self).save(*args, **kwargs)
 
 class Gallery(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -250,10 +245,12 @@ class Review(models.Model):
     def profile(self):
         return Profile.objects.get(user=self.user)
     
-@receiver(post_save, sender=Review) #receive a new review and call rating
+@receiver(post_save, sender=Review) # rating after a new review saved
 def update_product_rating(sender, instance, **kwargs):
     if instance.product:
-        instance.product.save()
+        product = instance.product
+        product.rating = product.product_rating()
+        product.save()
 
 class Wishlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
