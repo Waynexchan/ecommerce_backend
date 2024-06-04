@@ -77,7 +77,7 @@ class CartAPIView(generics.ListCreateAPIView):
             cart.country = country
             cart.cart_id = cart_id
 
-            cart.service_fee = service_fee_percentage * cart.sub_total
+            cart.service_fee = Decimal(service_fee_percentage) * cart.sub_total
 
             cart.total = cart.sub_total + cart.shipping_amount + cart.service_fee + cart.tax_fee
             cart.save()
