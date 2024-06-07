@@ -199,6 +199,7 @@ class CartOrderItem(models.Model):
     color = models.CharField(max_length=100, null=True, blank=True)
 
     # Coupons
+    coupon = models.ManyToManyField("store.Coupon", blank=True)
     initial_total = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
     saved = models.DecimalField(default=0.00, max_digits=12, decimal_places=2)
 
@@ -278,6 +279,7 @@ class Notification(models.Model):
             return "Notification -{self.pk}"
         
 class Coupon(models.Model):
+    coupon = models.ManyToManyField("self", blank=True, related_name="related_coupons")
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     user_by = models.ManyToManyField(User, blank=True)
     code = models.CharField(max_length=1000)
