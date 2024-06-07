@@ -268,9 +268,9 @@ class Wishlist(models.Model):
         return self.product.title
     
 class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     order = models.ForeignKey(CartOrder, on_delete=models.SET_NULL, null=True, blank=True)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True)
     order_item = models.ForeignKey(CartOrderItem, on_delete=models.SET_NULL, null=True, blank=True)
     seen = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)

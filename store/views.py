@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
-from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer
+from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer
 from userauths.models import User
 
 from rest_framework import generics , status
@@ -9,10 +9,23 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from decimal import Decimal
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
 
 import stripe
 
+
+
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def send_notification(user=None, vendor=None, order=None, order_item=None):
+    Notification.objects.create(
+        user = user,
+        vendor = vendor,
+        order = order,
+        order_item = order_item
+    )
 
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all()
@@ -379,21 +392,27 @@ class StripeCheckoutView(generics.CreateAPIView):
         except stripe.error.StripeError as e:
             return Response({"error": f"Something went wrong while creating the checkout session: {str(e)}"})
 
+
 class PaymentSuccessView(generics.CreateAPIView):
     serializer_class = CartOrderSerializer
     permission_classes = [AllowAny]
     queryset = CartOrder.objects.all()
+
+    
 
     def post(self, request, *args, **kwargs):
         payload = request.data
 
         order_oid = payload.get('order_oid')
         session_id = payload.get('session_id')
+       
 
         try:
             order = CartOrder.objects.get(oid=order_oid)
         except CartOrder.DoesNotExist:
             return Response({"message": "Order Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        order_items = CartOrderItem.objects.filter(order=order)
 
         if session_id != 'null':
             session = stripe.checkout.Session.retrieve(session_id)  # retrieve particular session id
@@ -403,11 +422,55 @@ class PaymentSuccessView(generics.CreateAPIView):
                     order.payment_status = 'paid'
                     order.save()
 
-                    # send Notifications
+                    # send Notifications to customers
+                    if order.buyer != None:
+                        send_notification(user=order.buyer, order=order)
+
+                    # send Notifications to vendors
+                    for o in order_items:
+                        send_notification(vendor=o.vendor, order = order, order_item=o)
+
+                        # send Email to Vendor
+
+                        context = {
+                            'order': order,
+                            'order_items': order_items,
+                            'vendor': o.vendor,
+                        }
+                        subject = "New Sale"
+                        text_body = render_to_string("email/vendor_sale.txt", context)
+                        html_body = render_to_string("email/vendor_sale.html", context)
+                        
+                        msg = EmailMultiAlternatives(
+                            subject=subject,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[o.vendor.user.email],
+                            body=text_body
+                        )
+                        msg.attach_alternative(html_body, "text/html")
+                        msg.send()
 
                     # send Email To Buyer
+                    context = {
+                        'order': order,
+                        'order_items': order_items,
+                    }
+                    subject = "Order Placed Successfully"
+                    text_body = render_to_string("email/customer_order_confirmation.txt", context)
+                    html_body = render_to_string("email/customer_order_confirmation.html", context)
+                    
+                    msg = EmailMultiAlternatives(
+                        subject=subject,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=[order.email],
+                        body=text_body
+                    )
+                    msg.attach_alternative(html_body, "text/html")
+                    msg.send()
 
-                    # Send Email to Vendors
+                 
+                    
+
                     return Response({"message": "Payment Successfull"})
                 else:
                     return Response({"message": "Already Paid"})
