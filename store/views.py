@@ -1,8 +1,10 @@
+from asyncio import Timeout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
 from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer
 from userauths.models import User
+import requests
 
 from rest_framework import generics , status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -393,19 +395,33 @@ class StripeCheckoutView(generics.CreateAPIView):
             return Response({"error": f"Something went wrong while creating the checkout session: {str(e)}"})
 
 
+def get_access_token(client_id, secret_id):
+    token_url = 'https://api.sandbox.paypal.com/v1/oauth2/token' # use live api key later
+    data = {'grant_type' : 'client_credentials'}
+    auth = (client_id, secret_id)
+    response = requests.post(token_url, data=data , auth=auth)
+    if response.status_code == 200:
+        print("Access Token:" , response.json()['access_token'])
+        return response.json()['access_token']
+    else:
+        raise Exception(f"Falied to get access token: {response.status_code}")
+
+import requests
+from requests.exceptions import Timeout, HTTPError
+
 class PaymentSuccessView(generics.CreateAPIView):
     serializer_class = CartOrderSerializer
     permission_classes = [AllowAny]
     queryset = CartOrder.objects.all()
-
-    
 
     def post(self, request, *args, **kwargs):
         payload = request.data
 
         order_oid = payload.get('order_oid')
         session_id = payload.get('session_id')
-       
+        paypal_order_id = payload.get('paypal_order_id')
+
+        print("paypal_order_id =====", paypal_order_id)
 
         try:
             order = CartOrder.objects.get(oid=order_oid)
@@ -414,71 +430,162 @@ class PaymentSuccessView(generics.CreateAPIView):
         
         order_items = CartOrderItem.objects.filter(order=order)
 
-        if session_id != 'null':
-            session = stripe.checkout.Session.retrieve(session_id)  # retrieve particular session id
+        # Paypal Payment
+        if paypal_order_id and paypal_order_id != 'null':
+            paypal_api_url = f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{paypal_order_id}'
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {get_access_token(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_SECRET_ID)}'
+            }
 
-            if session.payment_status == "paid":
-                if order.payment_status == "pending":
-                    order.payment_status = 'paid'
-                    order.save()
+            try:
+                response = requests.get(paypal_api_url, headers=headers, timeout=10)
+                response.raise_for_status()
+                if response.status_code == 200:
+                    paypal_order_data = response.json()  # response from paypal
+                    paypal_payment_status = paypal_order_data['status']
+                    if paypal_payment_status == "COMPLETED":
+                        if order.payment_status == "pending":
+                            order.payment_status = 'paid'
+                            order.save()
 
-                    # send Notifications to customers
-                    if order.buyer != None:
-                        send_notification(user=order.buyer, order=order)
+                            # send Notifications to customers
+                            if order.buyer is not None:
+                                send_notification(user=order.buyer, order=order)
 
-                    # send Notifications to vendors
-                    for o in order_items:
-                        send_notification(vendor=o.vendor, order = order, order_item=o)
+                            # send Notifications to vendors
+                            for o in order_items:
+                                send_notification(vendor=o.vendor, order=order, order_item=o)
 
-                        # send Email to Vendor
+                                # send Email to Vendor
+                                try:
+                                    context = {
+                                        'order': order,
+                                        'order_items': order_items,
+                                        'vendor': o.vendor,
+                                    }
+                                    subject = "New Sale"
+                                    text_body = render_to_string("email/vendor_sale.txt", context)
+                                    html_body = render_to_string("email/vendor_sale.html", context)
+                                    
+                                    msg = EmailMultiAlternatives(
+                                        subject=subject,
+                                        from_email=settings.DEFAULT_FROM_EMAIL,
+                                        to=[o.vendor.user.email],
+                                        body=text_body
+                                    )
+                                    msg.attach_alternative(html_body, "text/html")
+                                    msg.send()
+                                except Exception as e:
+                                    print(f"Failed to send email to vendor: {e}")
+                                    pass
 
-                        context = {
-                            'order': order,
-                            'order_items': order_items,
-                            'vendor': o.vendor,
-                        }
-                        subject = "New Sale"
-                        text_body = render_to_string("email/vendor_sale.txt", context)
-                        html_body = render_to_string("email/vendor_sale.html", context)
+                            # send Email To Buyer
+                            try:
+                                context = {
+                                    'order': order,
+                                    'order_items': order_items,
+                                }
+                                subject = "Order Placed Successfully"
+                                text_body = render_to_string("email/customer_order_confirmation.txt", context)
+                                html_body = render_to_string("email/customer_order_confirmation.html", context)
+                                
+                                msg = EmailMultiAlternatives(
+                                    subject=subject,
+                                    from_email=settings.DEFAULT_FROM_EMAIL,
+                                    to=[order.email],
+                                    body=text_body
+                                )
+                                msg.attach_alternative(html_body, "text/html")
+                                msg.send()
+                            except Exception as e:
+                                print(f"Failed to send email to buyer: {e}")
+                                pass
                         
-                        msg = EmailMultiAlternatives(
-                            subject=subject,
-                            from_email=settings.DEFAULT_FROM_EMAIL,
-                            to=[o.vendor.user.email],
-                            body=text_body
-                        )
-                        msg.attach_alternative(html_body, "text/html")
-                        msg.send()
+                            return Response({"message": "Payment Successful"})
+                        else:
+                            return Response({"message": "Already Paid"})
+                    else:
+                        return Response({"message": "Your Invoice is unpaid"})
 
-                    # send Email To Buyer
-                    context = {
-                        'order': order,
-                        'order_items': order_items,
-                    }
-                    subject = "Order Placed Successfully"
-                    text_body = render_to_string("email/customer_order_confirmation.txt", context)
-                    html_body = render_to_string("email/customer_order_confirmation.html", context)
+            except Timeout:
+                return Response({"message": "Request to PayPal timed out. Please try again later."}, status=status.HTTP_408_REQUEST_TIMEOUT)
+            except requests.exceptions.RequestException as e:
+                return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Stripe Payment
+        if session_id and session_id != 'null':
+            try:
+                session = stripe.checkout.Session.retrieve(session_id)  # retrieve particular session id
+
+                if session.payment_status == "paid":
+                    if order.payment_status == "pending":
+                        order.payment_status = 'paid'
+                        order.save()
+
+                        # send Notifications to customers
+                        if order.buyer is not None:
+                            send_notification(user=order.buyer, order=order)
+
+                        # send Notifications to vendors
+                        for o in order_items:
+                            send_notification(vendor=o.vendor, order=order, order_item=o)
+
+                            # send Email to Vendor
+                            try:
+                                context = {
+                                    'order': order,
+                                    'order_items': order_items,
+                                    'vendor': o.vendor,
+                                }
+                                subject = "New Sale"
+                                text_body = render_to_string("email/vendor_sale.txt", context)
+                                html_body = render_to_string("email/vendor_sale.html", context)
+                                
+                                msg = EmailMultiAlternatives(
+                                    subject=subject,
+                                    from_email=settings.DEFAULT_FROM_EMAIL,
+                                    to=[o.vendor.user.email],
+                                    body=text_body
+                                )
+                                msg.attach_alternative(html_body, "text/html")
+                                msg.send()
+                            except Exception as e:
+                                print(f"Failed to send email to vendor: {e}")
+                                pass
+
+                        # send Email To Buyer
+                        try:
+                            context = {
+                                'order': order,
+                                'order_items': order_items,
+                            }
+                            subject = "Order Placed Successfully"
+                            text_body = render_to_string("email/customer_order_confirmation.txt", context)
+                            html_body = render_to_string("email/customer_order_confirmation.html", context)
+                            
+                            msg = EmailMultiAlternatives(
+                                subject=subject,
+                                from_email=settings.DEFAULT_FROM_EMAIL,
+                                to=[order.email],
+                                body=text_body
+                            )
+                            msg.attach_alternative(html_body, "text/html")
+                            msg.send()
+                        except Exception as e:
+                            print(f"Failed to send email to buyer: {e}")
+                            pass
                     
-                    msg = EmailMultiAlternatives(
-                        subject=subject,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[order.email],
-                        body=text_body
-                    )
-                    msg.attach_alternative(html_body, "text/html")
-                    msg.send()
-
-                 
-                    
-
-                    return Response({"message": "Payment Successfull"})
+                        return Response({"message": "Payment Successful"})
+                    else:
+                        return Response({"message": "Already Paid"})
+                elif session.payment_status == "unpaid":
+                    return Response({"message": "Your Invoice is Unpaid"})
+                elif session.payment_status == "cancelled":
+                    return Response({"message": "Your Invoice was cancelled"})
                 else:
-                    return Response({"message": "Already Paid"})
-            elif session.payment_status == "unpaid":
-                return Response({"message": "Your Invoice is Unpaid"})
-            elif session.payment_status == "cancelled":
-                return Response({"message": "Your Invoice was cancelled"})
-            else:
-                return Response({"message": "An Error occurred, Try Again ..."})
+                    return Response({"message": "An Error occurred, Try Again ..."})
+            except stripe.error.StripeError as e:
+                return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({"message": "Invalid session ID"})

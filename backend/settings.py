@@ -164,6 +164,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 
+PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID')
+PAYPAL_SECRET_ID = env('PAYPAL_SECRET_ID')
+
 
 ANYMAIL = {
     "EMAIL_BACKEND": "anymail.backends.smtp.EmailBackend",
