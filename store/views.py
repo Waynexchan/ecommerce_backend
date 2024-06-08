@@ -2,7 +2,7 @@ from asyncio import Timeout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
-from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer
+from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer
 from userauths.models import User
 import requests
 
@@ -589,3 +589,36 @@ class PaymentSuccessView(generics.CreateAPIView):
                 return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({"message": "Invalid session ID"})
+
+
+class ReviewListAPIView(generics.ListCreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        product_id = self.kwargs['product_id']
+
+        product = Product.objects.get(id=product_id)
+        reviews = Review.objects.filter(product=product)
+        return reviews
+    
+    def create(self, request, *args, **kwargs):
+        payload = request.data
+
+        user_id = payload['user_id']
+        product_id = payload['product_id']
+        rating = payload['rating']
+        review = payload['review']
+
+        user = User.objects.get(id = user_id)
+        product = Product.objects.get(id = product_id)
+
+        Review.objects.create(
+            user = user,
+            product = product,
+            rating = rating,
+            review = review
+        )
+
+        return Response({"message": "Review Created Successfully"}, status=status.HTTP_200_OK)
