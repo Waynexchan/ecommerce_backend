@@ -2,7 +2,7 @@ from asyncio import Timeout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
-from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer
+from store.serializers import CouponSerializer, ProductSerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer, WishlistSerializer
 from userauths.models import User
 import requests
 
@@ -40,7 +40,35 @@ class OrderDetailAPIView(generics.RetrieveAPIView):
 
         order = CartOrder.objects.get(buyer=user, oid=order_oid , payment_status="paid")
         return order
+    
+class WishlistAPIView(generics.ListCreateAPIView):
+    serializer_class = WishlistSerializer
+    permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+
+        user = User.objects.get(id=user_id)
+        wishlists = Wishlist.objects.filter(user=user)
+
+        return wishlists
+    
+    def create(self, request, *args, **kwargs):
+        payload = request.data
+
+        product_id = payload['product_id']
+        user_id = payload['user_id']
+
+        product = Product.objects.get(id=product_id)
+        user = User.objects.get(id=user_id)
+
+        wishlist = Wishlist.objects.filter(product = product, user=user)
+        if wishlist:
+            wishlist.delete()
+            return Response({"message": "Wishlist deleted successfully."}, status=status.HTTP_200_OK)
+        else:
+            Wishlist.objects.create(product=product, user=user)
+            return  Response({"message": "Added to Wishlist."}, status=status.HTTP_201_CREATED)
 
 
 
