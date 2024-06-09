@@ -110,6 +110,17 @@ DATABASES = {
     }
 }
 
+#Swagger
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': None,
+    'REFETCH_SCHEMA_WITH_AUTH': True,
+}
+
+SITE_ID = 1
+
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

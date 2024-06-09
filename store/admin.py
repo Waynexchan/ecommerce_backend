@@ -37,7 +37,7 @@ class CartAdmin(admin.ModelAdmin):
 # Admin class for CartOrder
 class CartOrderAdmin(admin.ModelAdmin):
     inlines = [CartOrderItemsInlineAdmin]
-    list_display = ['oid', 'payment_status', 'order_status', 'sub_total', 'shipping_amount', 'tax_fee', 'service_fee', 'total', 'saved', 'date']
+    list_display = ['oid', 'buyer', 'payment_status', 'order_status', 'sub_total', 'shipping_amount', 'tax_fee', 'service_fee', 'total', 'saved', 'date']
     search_fields = ['oid', 'full_name', 'email', 'mobile']
     list_editable = ['order_status', 'payment_status']
     list_filter = ['payment_status', 'order_status']

@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from userauths import views as userauths_views
 from store import views as store_views
+from customer import views as customer_views
 
 
 urlpatterns = [
@@ -11,6 +12,7 @@ urlpatterns = [
     path('user/register/', userauths_views.RegisterView.as_view(), name='auth_register'),
     path('user/password-reset/<email>', userauths_views.PasswordResetEmailVerify.as_view(), name='user_profile'),
     path('user/password-change/', userauths_views.PasswordChangeView.as_view(), name='password_change'),
+    path('user/profile/<user_id>/', userauths_views.ProfileView.as_view(), name='profile-view'),
 
     # Store Endpoints
     path('category/', store_views.CategoryListAPIView.as_view()),
@@ -36,9 +38,11 @@ urlpatterns = [
 
     # Payment Endpoints
     path('stripe-checkout/<str:order_oid>/', store_views.StripeCheckoutView.as_view(), name='stripe-checkout'),
-    path('payment-success/<str:order_oid>/', store_views.PaymentSuccessView.as_view(), name='stripe-checkout'),
+    path('payment-success/<str:order_oid>/', store_views.PaymentSuccessView.as_view(), name='paypal-checkout'),
 
-
+    # Customer EndPoints
+    path('customer/orders/<int:user_id>/', customer_views.OrderAPIView.as_view(), name='customer-orders'),
+    path('customer/order/<int:user_id>/<str:order_oid>/', customer_views.OrderDetailAPIView.as_view(), name='customer-order-detail'),
 
 
 ]
