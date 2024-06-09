@@ -44,6 +44,9 @@ urlpatterns = [
     path('customer/orders/<int:user_id>/', customer_views.OrderAPIView.as_view(), name='customer-orders'),
     path('customer/order/<int:user_id>/<str:order_oid>/', customer_views.OrderDetailAPIView.as_view(), name='customer-order-detail'),
     path('customer/wishlist/<int:user_id>/', customer_views.WishlistAPIView.as_view(), name='customer-wishlist'),
+    path('customer/notification/<int:user_id>/', customer_views.CustomerNotification.as_view(), name='customer-notification'),
+    path('customer/notification/<int:user_id>/<int:noti_id>/', customer_views.MarkCustomerNotificationAsSeen.as_view(), name='customer-mark-notification'),
+
 
 
 ]

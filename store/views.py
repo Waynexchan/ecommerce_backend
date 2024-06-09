@@ -224,7 +224,7 @@ class CreateOrderAPIView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request):
-        payload = request.data # get data from frontend
+        payload = request.data  # get data from frontend
 
         full_name = payload['full_name']
         email = payload['email']
@@ -236,10 +236,7 @@ class CreateOrderAPIView(generics.CreateAPIView):
         cart_id = payload['cart_id']
         user_id = payload['user_id']
 
-        if user_id != 0:
-            user = User.objects.get(id=user_id)
-        else:
-            user = None
+        user = User.objects.get(id=user_id) if user_id != 0 else None
 
         cart_items = Cart.objects.filter(cart_id=cart_id)
 
@@ -258,6 +255,7 @@ class CreateOrderAPIView(generics.CreateAPIView):
             city=city,
             state=state,
             country=country,
+            buyer=user,  # Assign buyer here
         )
 
         for c in cart_items:
@@ -274,7 +272,7 @@ class CreateOrderAPIView(generics.CreateAPIView):
                 service_fee=c.service_fee,
                 tax_fee=c.tax_fee,
                 total=c.total,
-                initial_total=c.total, 
+                initial_total=c.total,
             )
 
             total_shipping += Decimal(c.shipping_amount)
@@ -296,6 +294,7 @@ class CreateOrderAPIView(generics.CreateAPIView):
         order.save()
 
         return Response({"message": "Order Created Successfully", "order_oid": order.oid}, status=status.HTTP_201_CREATED)
+
     
 class CheckoutView(generics.RetrieveAPIView):
     serializer_class = CartOrderSerializer
