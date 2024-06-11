@@ -1,4 +1,4 @@
-from userauths.serializer import ProfileSerializer
+from userauths.serializer import ProfileSerializer, UserSerializer
 from rest_framework import serializers
 
 from store.models import Category, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
@@ -123,6 +123,25 @@ class CartOrderSerializer(serializers.ModelSerializer):
         else:
             self.Meta.depth = 3
 
+class VendorSerializer(serializers.ModelSerializer):
+    # Serialize related CartOrderItem models
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Vendor
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(VendorSerializer, self).__init__(*args, **kwargs)
+        # Customize serialization depth based on the request method.
+        request = self.context.get('request')
+        if request and request.method == 'POST':
+            # When creating a new cart order, set serialization depth to 0.
+            self.Meta.depth = 0
+        else:
+            # For other methods, set serialization depth to 3.
+            self.Meta.depth = 3
+
 class ProductFaqSerializer(serializers.ModelSerializer):
     
     class Meta:
@@ -203,3 +222,23 @@ class NotificationSerializer(serializers.ModelSerializer):
 
         else:
             self.Meta.depth = 3
+
+class SummarySerializer(serializers.Serializer):
+    products = serializers.IntegerField()
+    orders = serializers.IntegerField()
+    revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    customers = serializers.IntegerField()  
+
+class EarningSerializer(serializers.Serializer):
+    monthly_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    
+class CouponSummarySerializer(serializers.Serializer):
+    total_coupons = serializers.IntegerField()
+    active_coupons = serializers.IntegerField()
+
+
+class NotificationSummarySerializer(serializers.Serializer):
+    read_noti = serializers.IntegerField()
+    unread_noti = serializers.IntegerField()   
+    all_noti = serializers.IntegerField()
