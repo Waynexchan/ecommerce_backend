@@ -59,6 +59,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'specification',
             'product_rating',
             'rating_count',
+            'orders',
             'size',
             'pid',
             'slug',
