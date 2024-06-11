@@ -7,7 +7,7 @@ from userauths.serializer import ProfileSerializer
 from vendor.models import Vendor
 from django.db import models
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
-from store.serializers import CouponSerializer, EarningSerializer, ProductSerializer,CouponSummarySerializer,NotificationSummarySerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer, VendorSerializer, WishlistSerializer, SummarySerializer
+from store.serializers import CouponSerializer, EarningSummarySerializer, ProductSerializer,CouponSummarySerializer,NotificationSummarySerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer, VendorSerializer, WishlistSerializer, SummarySerializer
 from userauths.models import Profile, User
 import requests
 
@@ -175,24 +175,25 @@ class FilterProductAPIView(generics.ListAPIView):
         return products
     
 class EarningAPIView(generics.ListAPIView):
-    serializer_class = EarningSerializer
+    serializer_class = EarningSummarySerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
+
         vendor_id = self.kwargs['vendor_id']
         vendor = Vendor.objects.get(id=vendor_id)
 
-        one_month_ago = datetime.today() -timedelta(days=28)
+        one_month_ago = datetime.today() - timedelta(days=28)
         monthly_revenue = CartOrderItem.objects.filter(vendor=vendor, order__payment_status="paid", date__gte=one_month_ago).aggregate(
             total_revenue=models.Sum(models.F('sub_total') + models.F('shipping_amount')))['total_revenue'] or 0
         total_revenue = CartOrderItem.objects.filter(vendor=vendor, order__payment_status="paid").aggregate(
             total_revenue=models.Sum(models.F('sub_total') + models.F('shipping_amount')))['total_revenue'] or 0
-        
-        return[{
-            'monthly_revenue' : monthly_revenue,
+
+        return [{
+            'monthly_revenue': monthly_revenue,
             'total_revenue': total_revenue,
         }]
-    
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)

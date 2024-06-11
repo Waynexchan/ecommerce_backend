@@ -164,7 +164,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Review
-        fields = ["id", "review", "rating", "user", "profile", "date"]
+        fields = ["id", "review", "rating", "user", "profile", "date", "product", "reply"]
 
     def __init__(self, *args, **kwargs): # extend  model
         super(ReviewSerializer, self).__init__(*args, **kwargs)
@@ -229,10 +229,10 @@ class SummarySerializer(serializers.Serializer):
     orders = serializers.IntegerField()
     revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
     customers = serializers.IntegerField()  
-
-class EarningSerializer(serializers.Serializer):
-    monthly_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
-    total_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    
+class EarningSummarySerializer(serializers.Serializer):
+    monthly_revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
     
 class CouponSummarySerializer(serializers.Serializer):
     total_coupons = serializers.IntegerField()
