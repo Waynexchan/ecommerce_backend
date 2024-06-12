@@ -6,6 +6,7 @@ class Vendor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.FileField(upload_to="vendor", blank=True, null=True, default="vendor.jpg")
     name = models.CharField(max_length=100, help_text="Shop name", null=True, blank=True)
+    email = models.CharField(max_length=100, help_text="Shop email", null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     mobile = models.CharField(max_length=100, help_text="Shop Mobile Number", null=True, blank=True)
     active = models.BooleanField(default=False)

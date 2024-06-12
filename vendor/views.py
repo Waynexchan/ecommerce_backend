@@ -370,7 +370,7 @@ class VendorProfileUpdate(generics.RetrieveUpdateAPIView):
     permission_classes = [AllowAny]
 
 class ShopUpdateView(generics.RetrieveUpdateAPIView):
-    queryset = Profile.objects.all()
+    queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
     permission_classes = [AllowAny]
 
