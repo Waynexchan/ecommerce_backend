@@ -312,7 +312,7 @@ class CouponStatsAPIView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-class NotificationUnseenAPIView(generics.ListAPIView):
+class NotificationAPIView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes=[AllowAny]
 
@@ -322,15 +322,7 @@ class NotificationUnseenAPIView(generics.ListAPIView):
         vendor = Vendor.objects.get(id=vendor_id)
         return Notification.objects.filter(vendor=vendor, seen=False).order_by('-id')
     
-class NotificationSeenAPIView(generics.ListAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes=[AllowAny]
 
-    def get_queryset(self):
-
-        vendor_id = self.kwargs['vendor_id']
-        vendor = Vendor.objects.get(id=vendor_id)
-        return Notification.objects.filter(vendor=vendor, seen=True).order_by('-id')
     
 class NotificationSummaryAPIView(generics.ListAPIView):
     serializer_class = NotificationSummarySerializer
