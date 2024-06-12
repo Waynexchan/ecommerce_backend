@@ -237,7 +237,18 @@ class ReviewDetailAPIView(generics.RetrieveUpdateAPIView):
 
         return review
     
-class CouponListCreateAPIView(generics.CreateAPIView):
+class CouponListAPIView(generics.ListAPIView):
+    serializer_class = CouponSerializer
+    queryset = Coupon.objects.all()
+    permission_classes = (AllowAny, )
+
+    def get_queryset(self):
+        vendor_id = self.kwargs['vendor_id']
+        vendor = Vendor.objects.get(id=vendor_id)
+        coupon = Coupon.objects.filter(vendor=vendor)
+        return coupon
+    
+class CouponCreateAPIView(generics.CreateAPIView):
     serializer_class = CouponSerializer
     permission_classes = [AllowAny]
 
