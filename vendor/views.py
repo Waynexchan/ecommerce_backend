@@ -384,10 +384,10 @@ class ShopAPIView(generics.RetrieveAPIView):
     
 class ShopProductAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    permission_classes =[AllowAny]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         vendor_slug = self.kwargs['vendor_slug']
-        vendor =  Vendor.objects.get(slug=vendor_slug)
-
-        return Profile.objects.filter(vendor=vendor)
+        vendor = Vendor.objects.get(slug=vendor_slug)
+        products = Product.objects.filter(vendor=vendor)
+        return products

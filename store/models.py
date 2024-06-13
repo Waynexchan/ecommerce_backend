@@ -52,7 +52,7 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
-    def product_rating(self): # 計算產品的平均評分
+    def product_rating(self): 
         product_rating = Review.objects.filter(product=self).aggregate(avg_rating=models.Avg("rating"))
         return product_rating['avg_rating']
     
