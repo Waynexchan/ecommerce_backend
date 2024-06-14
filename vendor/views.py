@@ -5,9 +5,9 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from userauths.serializer import ProfileSerializer
 from vendor.models import Vendor
-from django.db import models
+from django.db import models, transaction
 from store.models import Category, Tax, Product, Gallery, Specification, Size,Color, Cart, CartOrder , CartOrderItem, ProductFaq, Review, Wishlist, Notification, Coupon
-from store.serializers import CouponSerializer, EarningSummarySerializer, ProductSerializer,CouponSummarySerializer,NotificationSummarySerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer, VendorSerializer, WishlistSerializer, SummarySerializer
+from store.serializers import CouponSerializer, EarningSummarySerializer, ProductSerializer,CouponSummarySerializer,NotificationSummarySerializer, CategorySerializer, ReviewSerializer, CartSerializer, CartOrderSerializer, CartOrderItemSerializer, NotificationSerializer, VendorSerializer, WishlistSerializer, SummarySerializer, SpecificationSerializer, ColorSerializer, SizeSerializer, GallerySerializer
 from userauths.models import Profile, User
 import requests
 
@@ -391,3 +391,67 @@ class ShopProductAPIView(generics.ListAPIView):
         vendor = Vendor.objects.get(slug=vendor_slug)
         products = Product.objects.filter(vendor=vendor)
         return products
+    
+class ProductCreateView(generics.CreateAPIView):
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all()
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()
+
+        product_instance = serializer.instance
+
+        Specification_data = []
+        colors_data = []
+        sizes_data = []
+        gallery_data = []
+
+        for key, value in self.request.data.item():
+            # sepcification [0][title]
+            if key.startswith('specifications') and '[title]' in key:
+                index = key.split('[')[1].split(']')
+                title = value
+                content_key = f'specifications[{index}][content]'
+                content = self.request.data.get(content_key)
+
+                Specification_data.append({'title': title, 'content': content})
+
+            elif key.startswith('colors') and '[name]' in key:
+                index = key.split('[')[1].split(']')
+                name = value
+                color_code_key = f'colors[{index}][color_code]'
+                color_code = self.request.data.get(color_code_key)
+
+                color_code.append({'name': name, 'color_code' :color_code})
+
+            elif key.startswith('sizes') and '[name]' in key:
+                index = key.split('[')[1].split(']')
+                name = value
+                price_key = f'sizes[{index}][price]'
+                price = self.request.data.get(price_key)
+                sizes_data.append({'name': name, 'price': price})
+
+            elif key.startswith('gallery') and '[image]' in key:
+                index = key.split('[')[1].split(']')
+                image = value
+                gallery_data.append({'image' : image})
+
+        print('Specification_data ===', Specification_data)
+        print('colors_data ===', colors_data)
+        print('sizes_data ===', sizes_data)
+        print('gallery_data ===', gallery_data)
+
+        self.save_nested_data(product_instance, SpecificationSerializer, Specification_data)
+        self.save_nested_data(product_instance, ColorSerializer, colors_data)
+        self.save_nested_data(product_instance, SizeSerializer, sizes_data)
+        self.save_nested_data(product_instance, GallerySerializer, gallery_data)
+       
+       
+    def save_nested_data (self, product_instance, serializer_class, data):
+        serializer = serializer_class(data=data, many=True, context={'product_instance': product_instance})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(product=product_instance)
+
