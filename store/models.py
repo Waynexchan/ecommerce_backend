@@ -41,7 +41,7 @@ class Product(models.Model):
     rating = models.PositiveIntegerField(default=0,null=True, blank=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     pid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -75,8 +75,8 @@ class Product(models.Model):
         return CartOrderItem.objects.filter(product=self).count()
 
 class Gallery(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    image = models.FileField(upload_to="products", default="product.jpg")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    image = models.FileField(upload_to="products", default="product.jpg", null=True, blank=True)
     active = models.BooleanField(default=True)
     gid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
 
@@ -88,29 +88,29 @@ class Gallery(models.Model):
 
 
 class Specification(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    title = models.CharField(max_length=1000)
-    content = models.CharField(max_length=1000)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    title = models.CharField(max_length=1000, null=True, blank=True)
+    content = models.CharField(max_length=1000, null=True, blank=True)
 
     def __str__(self):
         return self.title
 
 
 class Size(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-    price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)  # different price for different size
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=1000, null=True, blank=True)
+    price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00, null=True, blank=True)  # different price for different size
 
     def __str__(self):
         return self.name
 
 
 class Color(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-    color_code = models.CharField(max_length=1000)
-    date = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=1000, null=True, blank=True)
+    color_code = models.CharField(max_length=1000, null=True, blank=True)
 
+    
     def __str__(self):
         return self.name
 
