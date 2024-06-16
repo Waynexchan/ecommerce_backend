@@ -466,5 +466,84 @@ class ProductCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(product=product_instance)
        
-    
+class ProductUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = (AllowAny, )
 
+    def get_object(self):
+        vendor_id = self.kwargs['vendor_id']
+        product_pid = self.kwargs['product_pid']
+        vendor = Vendor.objects.get(id=vendor_id)
+        product = Product.objects.get(pid=product_pid, vendor=vendor)
+        return product
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        product_instance = self.get_object()
+        print("Received data:", request.data)
+        print("Received files:", request.FILES)
+        
+        serializer = self.get_serializer(product_instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        product_instance.specification_set.all().delete()
+        product_instance.color_set.all().delete()
+        product_instance.size_set.all().delete()
+        product_instance.gallery_set.all().delete()
+
+        specifications_data = []
+        colors_data = []
+        sizes_data = []
+        gallery_data = []
+
+        for key, value in request.data.items():
+            if key.startswith('specifications') and '[title]' in key:
+                index = key.split('[')[1].split(']')[0]
+                title = value
+                content_key = f'specifications[{index}][content]'
+                content = request.data.get(content_key)
+                specifications_data.append({'title': title, 'content': content})
+
+            elif key.startswith('colors') and '[name]' in key:
+                index = key.split('[')[1].split(']')[0]
+                name = value
+                color_code_key = f'colors[{index}][color_code]'
+                color_code = request.data.get(color_code_key)
+                image_key = f'colors[{index}][image]'
+                image = request.FILES.get(image_key)
+                if image:
+                    colors_data.append({'name': name, 'color_code': color_code, 'image': image})
+                else:
+                    colors_data.append({'name': name, 'color_code': color_code})
+
+            elif key.startswith('sizes') and '[name]' in key:
+                index = key.split('[')[1].split(']')[0]
+                name = value
+                price_key = f'sizes[{index}][price]'
+                price = request.data.get(price_key)
+                sizes_data.append({'name': name, 'price': price})
+
+            elif key.startswith('gallery') and '[image]' in key:
+                index = key.split('[')[1].split(']')[0]
+                image = request.FILES.get(f'gallery[{index}][image]')
+                if image:
+                    gallery_data.append({'image': image})
+
+        print("Parsed specifications data:", specifications_data)
+        print("Parsed colors data:", colors_data)
+        print("Parsed sizes data:", sizes_data)
+        print("Parsed gallery data:", gallery_data)
+
+        self.save_nested_data(product_instance, SpecificationSerializer, specifications_data)
+        self.save_nested_data(product_instance, ColorSerializer, colors_data)
+        self.save_nested_data(product_instance, SizeSerializer, sizes_data)
+        self.save_nested_data(product_instance, GallerySerializer, gallery_data)
+
+        return Response({'message': 'Product updated successfully'}, status=status.HTTP_200_OK)
+
+    def save_nested_data(self, product_instance, serializer_class, data):
+        serializer = serializer_class(data=data, many=True, context={'product_instance': product_instance})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(product=product_instance)

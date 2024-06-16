@@ -75,6 +75,7 @@ urlpatterns = [
     path('shop/<vendor_slug>/', vendor_views.ShopAPIView.as_view()),
     path('vendor-products/<vendor_slug>/', vendor_views.ShopProductAPIView.as_view()),
     path('vendor-product-create/<vendor_id>/', vendor_views.ProductCreateView.as_view(), name='vendor-product-create'),
+    path('vendor-product-update/<vendor_id>/<product_pid>/', vendor_views.ProductUpdateView.as_view(), name='vendor-product-update'),
 
 
 

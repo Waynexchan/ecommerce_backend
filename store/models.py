@@ -30,6 +30,7 @@ class Product(models.Model):
     image = models.FileField(upload_to="products", default="product.jpg", null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    
     price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
     old_price = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
     shipping_amount = models.DecimalField(decimal_places=2, max_digits=12, default=0.00)
@@ -38,7 +39,7 @@ class Product(models.Model):
     status = models.CharField(max_length=100, choices=Status, default="published")
     featured = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
-    rating = models.PositiveIntegerField(default=0,null=True, blank=True)
+    rating = models.PositiveIntegerField(default=0, null=True, blank=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     pid = ShortUUIDField(unique=True, length=10, alphabet="abcdefg12345")
     slug = models.SlugField(null=True, blank=True)
@@ -51,7 +52,8 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
-
+    
+    
     def product_rating(self): 
         product_rating = Review.objects.filter(product=self).aggregate(avg_rating=models.Avg("rating"))
         return product_rating['avg_rating']
